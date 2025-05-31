@@ -26,6 +26,28 @@ jobs:
         python-version: ${{ matrix.python-version }}
         check-latest: true
     
+    - name: Install Linux dependencies
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libxcb-icccm4 \
+          libxcb-cursor0 \
+          libxkbcommon-x11-0 \
+          libxcb-shape0 \
+          libxcb-keysyms1 \
+          libxcb-render-util0 \
+          libxcb-image0 \
+          libxcb-xkb1 \
+          libxcb-icccm4 \
+          libxcb-cursor0 \
+          libxkbcommon-x11-0 \
+          libxcb-shape0 \
+          libxcb-keysyms1 \
+          libxcb-render-util0 \
+          libxcb-image0 \
+          libxcb-xkb1
+    
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -34,6 +56,9 @@ jobs:
     
     - name: Build application
       run: |
+        if [ "${{ matrix.os }}" == "windows-latest" ]; then
+          chcp 65001
+        fi
         python build.py
     
     - name: Upload artifacts
