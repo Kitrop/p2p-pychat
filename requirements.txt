@@ -1,0 +1,8 @@
+PySide6>=6.6.0
+pynacl>=1.5.0
+cryptography>=42.0.0
+aiortc>=1.5.0
+aioice>=0.9.0
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+pyinstaller>=6.3.0 
