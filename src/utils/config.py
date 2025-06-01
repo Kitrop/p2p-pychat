@@ -1,8 +1,20 @@
 import os
+import sys
 from pathlib import Path
 
+
+def get_app_dir() -> Path:
+    """Получение директории приложения"""
+    if getattr(sys, 'frozen', False):
+        # Если приложение собрано в exe
+        return Path(sys._MEIPASS)
+    else:
+        # Если запущено из исходников
+        return Path(__file__).parent.parent.parent
+
+
 # Базовые пути
-BASE_DIR = Path(__file__).parent.parent.parent
+BASE_DIR = get_app_dir()
 DATA_DIR = BASE_DIR / "data"
 KEYS_DIR = DATA_DIR / "keys"
 CHATS_DIR = DATA_DIR / "chats"

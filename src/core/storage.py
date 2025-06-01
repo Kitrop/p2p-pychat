@@ -5,6 +5,10 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 from ..utils.config import CHATS_DIR, KEYS_DIR, DEFAULT_MESSAGE_EXPIRY
 from .crypto import CryptoManager
+import base64
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Storage:
@@ -16,9 +20,16 @@ class Storage:
 
     def _ensure_directories(self) -> None:
         """Создание необходимых директорий"""
-        CHATS_DIR.mkdir(parents=True, exist_ok=True)
-        KEYS_DIR.mkdir(parents=True, exist_ok=True)
-        Path("data").mkdir(parents=True, exist_ok=True)
+        try:
+            logger.info(f"Создание директории для ключей: {KEYS_DIR}")
+            KEYS_DIR.mkdir(parents=True, exist_ok=True)
+            logger.info(f"Создание директории для чатов: {CHATS_DIR}")
+            CHATS_DIR.mkdir(parents=True, exist_ok=True)
+            logger.info(f"Создание директории data: {Path('data')}")
+            Path("data").mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            logger.error(f"Ошибка при создании директорий: {e}")
+            raise
 
     def _ensure_settings_file(self) -> None:
         """Создание файла настроек, если он не существует"""
@@ -53,26 +64,62 @@ class Storage:
         with open(self.settings_file, "w") as f:
             json.dump(settings, f, indent=2)
 
-    def save_keys(self, public_key: str, verify_key: str) -> None:
+    def save_keys(self, public_key: str, verify_key: str, private_key: str, signing_key: str) -> None:
         """Сохранение ключей"""
-        keys_file = KEYS_DIR / "keys.json"
-        keys_data = {
-            "public_key": public_key,
-            "verify_key": verify_key,
-            "created_at": datetime.now().isoformat()
-        }
+        try:
+            keys_file = KEYS_DIR / "keys.json"
+            logger.info(f"Сохранение ключей в файл: {keys_file}")
 
-        with open(keys_file, "w") as f:
-            json.dump(keys_data, f, indent=2)
+            keys_data = {
+                "info": "Этот файл содержит ваши криптографические ключи. Храните его в надежном месте!",
+                "keys": {
+                    "public_key": {
+                        "description": "Публичный ключ для шифрования (можно делиться с другими)",
+                        "value": public_key
+                    },
+                    "verify_key": {
+                        "description": "Ключ верификации (можно делиться с другими)",
+                        "value": verify_key
+                    },
+                    "private_key": {
+                        "description": "Приватный ключ для расшифровки (храните в секрете!)",
+                        "value": private_key
+                    },
+                    "signing_key": {
+                        "description": "Ключ подписи (храните в секрете!)",
+                        "value": signing_key
+                    }
+                },
+                "created_at": datetime.now().isoformat()
+            }
 
-    def load_keys(self) -> Optional[Dict[str, str]]:
+            with open(keys_file, "w") as f:
+                json.dump(keys_data, f, indent=2)
+
+            logger.info("Ключи успешно сохранены")
+        except Exception as e:
+            logger.error(f"Ошибка при сохранении ключей: {e}")
+            raise
+
+    def load_keys(self) -> bool:
         """Загрузка ключей"""
         keys_file = KEYS_DIR / "keys.json"
         if not keys_file.exists():
-            return None
+            return False
 
-        with open(keys_file, "r") as f:
-            return json.load(f)
+        try:
+            with open(keys_file, "r") as f:
+                keys_data = json.load(f)
+
+            # Загружаем ключи в CryptoManager
+            self.crypto.load_keys(
+                base64.b64decode(keys_data["private_key"]),
+                base64.b64decode(keys_data["signing_key"])
+            )
+            return True
+        except Exception as e:
+            print(f"Ошибка загрузки ключей: {e}")
+            return False
 
     def save_chat_history(self, peer_id: str, messages: List[Dict]) -> None:
         """Сохранение истории чата"""

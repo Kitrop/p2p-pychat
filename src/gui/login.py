@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal
 from src.core.crypto import CryptoManager
 from src.core.storage import Storage
+import base64
 
 
 class LoginWindow(QDialog):
@@ -87,14 +88,42 @@ class LoginWindow(QDialog):
     def generate_keys(self):
         """Генерация новых ключей"""
         try:
-            public_key, verify_key = self.crypto_manager.generate_keys()
-            self.storage.save_keys(public_key, verify_key)
+            # Генерируем ключи
+            self.crypto_manager.generate_keys()
+
+            # Получаем все ключи
+            public_key = base64.b64encode(
+                self.crypto_manager.get_public_key()).decode()
+            verify_key = base64.b64encode(
+                self.crypto_manager.get_verify_key()).decode()
+            private_key = base64.b64encode(
+                self.crypto_manager.get_private_key()).decode()
+            signing_key = base64.b64encode(
+                self.crypto_manager.get_signing_key()).decode()
+
+            # Сохраняем все ключи
+            self.storage.save_keys(
+                public_key, verify_key, private_key, signing_key)
+
+            # Показываем ключи пользователю
+            keys_info = (
+                "Ваши ключи успешно сгенерированы!\n\n"
+                "Публичный ключ (для обмена с другими пользователями):\n"
+                f"{public_key}\n\n"
+                "Ключ верификации (для обмена с другими пользователями):\n"
+                f"{verify_key}\n\n"
+                "Приватный ключ (храните в надежном месте):\n"
+                f"{private_key}\n\n"
+                "Ключ подписи (храните в надежном месте):\n"
+                f"{signing_key}\n\n"
+                "ВНИМАНИЕ: Сохраните приватный ключ и ключ подписи в надежном месте!\n"
+                "Они необходимы для доступа к вашему аккаунту."
+            )
 
             QMessageBox.information(
                 self,
                 "Ключи сгенерированы",
-                "Ваши ключи успешно сгенерированы и сохранены.\n"
-                "Сохраните их в надежном месте!"
+                keys_info
             )
 
             self.login_successful.emit()
@@ -116,10 +145,25 @@ class LoginWindow(QDialog):
             if not private_key or not verify_key:
                 raise ValueError("Введите оба ключа")
 
-            self.crypto_manager.load_keys(
-                private_key.encode(),
-                verify_key.encode()
-            )
+            # Декодируем ключи из base64
+            private_key_bytes = base64.b64decode(private_key)
+            verify_key_bytes = base64.b64decode(verify_key)
+
+            # Загружаем ключи
+            self.crypto_manager.load_keys(private_key_bytes, verify_key_bytes)
+
+            # Сохраняем ключи в хранилище
+            public_key = base64.b64encode(
+                self.crypto_manager.get_public_key()).decode()
+            verify_key = base64.b64encode(
+                self.crypto_manager.get_verify_key()).decode()
+            private_key = base64.b64encode(
+                self.crypto_manager.get_private_key()).decode()
+            signing_key = base64.b64encode(
+                self.crypto_manager.get_signing_key()).decode()
+
+            self.storage.save_keys(
+                public_key, verify_key, private_key, signing_key)
 
             self.login_successful.emit()
             self.accept()

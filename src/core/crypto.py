@@ -15,17 +15,12 @@ class CryptoManager:
         self._signing_key: Optional[SigningKey] = None
         self._verify_key: Optional[VerifyKey] = None
 
-    def generate_keys(self) -> Tuple[bytes, bytes]:
+    def generate_keys(self) -> None:
         """Генерация пары ключей для шифрования и подписи"""
         self._private_key = PrivateKey.generate()
         self._public_key = self._private_key.public_key
         self._signing_key = SigningKey.generate()
         self._verify_key = self._signing_key.verify_key
-
-        return (
-            base64.b64encode(self._public_key.encode()).decode(),
-            base64.b64encode(self._verify_key.encode()).decode()
-        )
 
     def load_keys(self, private_key: bytes, verify_key: bytes) -> None:
         """Загрузка существующих ключей"""
@@ -92,3 +87,15 @@ class CryptoManager:
         if not self._verify_key:
             raise ValueError("Ключи не инициализированы")
         return self._verify_key.encode()
+
+    def get_private_key(self) -> bytes:
+        """Получение приватного ключа"""
+        if not self._private_key:
+            raise ValueError("Ключи не инициализированы")
+        return self._private_key.encode()
+
+    def get_signing_key(self) -> bytes:
+        """Получение ключа подписи"""
+        if not self._signing_key:
+            raise ValueError("Ключи не инициализированы")
+        return self._signing_key.encode()
