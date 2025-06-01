@@ -113,17 +113,33 @@ class Storage:
         """Загрузка ключей"""
         keys_file = KEYS_DIR / "keys.json"
         if not keys_file.exists():
+            logger.warning(f"Файл ключей не найден: {keys_file}")
             return False
 
         try:
             with open(keys_file, "r") as f:
                 keys_data = json.load(f)
 
+            # Проверяем структуру данных
+            if "keys" not in keys_data:
+                logger.error(
+                    "Неверный формат файла ключей: отсутствует секция 'keys'")
+                return False
+
+            keys = keys_data["keys"]
+            required_keys = ["private_key", "signing_key"]
+            for key in required_keys:
+                if key not in keys or "value" not in keys[key]:
+                    logger.error(
+                        f"Неверный формат файла ключей: отсутствует ключ '{key}'")
+                    return False
+
             # Загружаем ключи в CryptoManager
             self.crypto.load_keys(
-                base64.b64decode(keys_data["keys"]["private_key"]["value"]),
-                base64.b64decode(keys_data["keys"]["signing_key"]["value"])
+                base64.b64decode(keys["private_key"]["value"]),
+                base64.b64decode(keys["signing_key"]["value"])
             )
+            logger.info("Ключи успешно загружены")
             return True
         except Exception as e:
             logger.error(f"Ошибка загрузки ключей: {e}")

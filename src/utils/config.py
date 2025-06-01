@@ -7,7 +7,7 @@ def get_app_dir() -> Path:
     """Получение директории приложения"""
     if getattr(sys, 'frozen', False):
         # Если приложение собрано в exe
-        return Path(sys._MEIPASS)
+        return Path(sys.executable).parent
     else:
         # Если запущено из исходников
         return Path(__file__).parent.parent.parent
