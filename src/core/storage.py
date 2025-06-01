@@ -16,7 +16,9 @@ class Storage:
         self.crypto = crypto_manager
         self._ensure_directories()
         self.settings_file = Path("data") / "settings.json"
+        self.contacts_file = Path("data") / "contacts.json"
         self._ensure_settings_file()
+        self._ensure_contacts_file()
 
     def _ensure_directories(self) -> None:
         """Создание необходимых директорий"""
@@ -36,6 +38,12 @@ class Storage:
         if not self.settings_file.exists():
             # Устанавливаем светлую тему по умолчанию
             self.save_setting("theme", "light")
+
+    def _ensure_contacts_file(self) -> None:
+        """Создание файла контактов, если он не существует"""
+        if not self.contacts_file.exists():
+            with open(self.contacts_file, "w") as f:
+                json.dump({"contacts": []}, f, indent=2)
 
     def get_setting(self, key: str, default: Any = None) -> Any:
         """Получение значения настройки"""
@@ -113,12 +121,12 @@ class Storage:
 
             # Загружаем ключи в CryptoManager
             self.crypto.load_keys(
-                base64.b64decode(keys_data["private_key"]),
-                base64.b64decode(keys_data["signing_key"])
+                base64.b64decode(keys_data["keys"]["private_key"]["value"]),
+                base64.b64decode(keys_data["keys"]["signing_key"]["value"])
             )
             return True
         except Exception as e:
-            print(f"Ошибка загрузки ключей: {e}")
+            logger.error(f"Ошибка загрузки ключей: {e}")
             return False
 
     def save_chat_history(self, peer_id: str, messages: List[Dict]) -> None:
@@ -194,3 +202,50 @@ class Storage:
             peer_id = chat_file.stem
             # Это автоматически удалит истекшие сообщения
             self.load_chat_history(peer_id)
+
+    def add_contact(self, public_key: str) -> None:
+        """Добавление нового контакта"""
+        try:
+            # Проверяем формат ключа
+            if not public_key or len(public_key) < 32:
+                raise ValueError("Неверный формат публичного ключа")
+
+            # Загружаем существующие контакты
+            contacts = []
+            if self.contacts_file.exists():
+                with open(self.contacts_file, "r") as f:
+                    data = json.load(f)
+                    contacts = data.get("contacts", [])
+
+            # Проверяем, не существует ли уже такой контакт
+            for contact in contacts:
+                if contact["public_key"] == public_key:
+                    raise ValueError("Контакт уже существует")
+
+            # Добавляем новый контакт
+            contacts.append({
+                "public_key": public_key,
+                "added_at": datetime.now().isoformat()
+            })
+
+            # Сохраняем обновленный список контактов
+            with open(self.contacts_file, "w") as f:
+                json.dump({"contacts": contacts}, f, indent=2)
+
+            logger.info(f"Контакт успешно добавлен: {public_key[:10]}...")
+        except Exception as e:
+            logger.error(f"Ошибка при добавлении контакта: {e}")
+            raise
+
+    def get_contacts(self) -> List[Dict]:
+        """Получение списка контактов"""
+        if not self.contacts_file.exists():
+            return []
+
+        try:
+            with open(self.contacts_file, "r") as f:
+                data = json.load(f)
+                return data.get("contacts", [])
+        except Exception as e:
+            logger.error(f"Ошибка при получении контактов: {e}")
+            return []
