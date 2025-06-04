@@ -3,7 +3,6 @@ from PySide6.QtWidgets import (
     QTextEdit, QLabel, QLineEdit, QMessageBox
 )
 from PySide6.QtCore import Qt, Signal, Slot
-from PySide6.QtGui import QPalette
 from src.core.crypto import CryptoManager
 from src.core.network import P2PConnection
 from src.core.storage import Storage
@@ -55,9 +54,10 @@ class ChatWindow(QWidget):
 
     def _load_history(self):
         """Загрузка истории сообщений"""
-        messages = self.storage.get_chat_history(self.peer_id)
+        messages = self.storage.load_chat_history(self.peer_id)
         for msg in messages:
-            self._add_message_to_history(msg["sender"], msg["text"])
+            self._add_message_to_history(
+                msg.get("sender", self.peer_id), msg.get("text", ""))
 
     def _setup_connection(self):
         """Настройка соединения"""
@@ -69,7 +69,8 @@ class ChatWindow(QWidget):
         """Обработка полученного сообщения"""
         if peer_id == self.peer_id:
             self._add_message_to_history(peer_id, message)
-            self.storage.add_message(self.peer_id, peer_id, message)
+            self.storage.add_message(
+                self.peer_id, {"sender": peer_id, "text": message})
 
     @Slot(str)
     def on_connection_closed(self, peer_id: str):
@@ -88,7 +89,8 @@ class ChatWindow(QWidget):
         try:
             self.connection.send_message(self.peer_id, text)
             self._add_message_to_history("me", text)
-            self.storage.add_message(self.peer_id, "me", text)
+            self.storage.add_message(
+                self.peer_id, {"sender": "me", "text": text})
             self.message_input.clear()
         except Exception as e:
             QMessageBox.critical(self, "Ошибка",

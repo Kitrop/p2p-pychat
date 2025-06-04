@@ -1,11 +1,9 @@
 import asyncio
 import json
 import logging
-from typing import Optional, Dict, Callable, Any
-from aiortc import RTCPeerConnection, RTCSessionDescription, RTCIceCandidate
-from aiortc.contrib.media import MediaRelay
-from aioice import stun
-from ..utils.config import STUN_SERVERS, DEFAULT_PORT
+from typing import Optional, Callable
+from aiortc import RTCPeerConnection, RTCSessionDescription
+from ..utils.config import STUN_SERVERS
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +13,6 @@ class P2PConnection:
         self.pc: Optional[RTCPeerConnection] = None
         self.data_channel = None
         self.on_message = on_message
-        self.media_relay = MediaRelay()
         self._connected = False
 
     async def create_connection(self) -> None:

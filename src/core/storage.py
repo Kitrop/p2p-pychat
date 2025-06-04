@@ -1,10 +1,8 @@
 import json
-import os
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 from datetime import datetime, timedelta
 from ..utils.config import CHATS_DIR, KEYS_DIR, DEFAULT_MESSAGE_EXPIRY
-from .crypto import CryptoManager
 import base64
 import logging
 
@@ -12,8 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class Storage:
-    def __init__(self, crypto_manager: CryptoManager):
-        self.crypto = crypto_manager
+    def __init__(self):
         self._ensure_directories()
         self.settings_file = Path("data") / "settings.json"
         self.contacts_file = Path("data") / "contacts.json"
@@ -265,3 +262,21 @@ class Storage:
         except Exception as e:
             logger.error(f"Ошибка при получении контактов: {e}")
             return []
+
+    def delete_contact(self, public_key: str) -> None:
+        """Удаление контакта по публичному ключу"""
+        if not self.contacts_file.exists():
+            return
+        try:
+            with open(self.contacts_file, "r") as f:
+                data = json.load(f)
+                contacts = data.get("contacts", [])
+            # Оставляем только те контакты, которые не совпадают с удаляемым
+            new_contacts = [
+                c for c in contacts if c["public_key"] != public_key]
+            with open(self.contacts_file, "w") as f:
+                json.dump({"contacts": new_contacts}, f, indent=2)
+            logger.info(f"Контакт удалён: {public_key[:10]}...")
+        except Exception as e:
+            logger.error(f"Ошибка при удалении контакта: {e}")
+            raise

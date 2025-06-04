@@ -21,6 +21,7 @@ wheels/
 *.egg
 
 data/
+INFO.md
 
 # PyInstaller
 *.manifest

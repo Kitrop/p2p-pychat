@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QPushButton,
     QLabel, QLineEdit, QMessageBox, QRadioButton,
-    QButtonGroup
+    QButtonGroup, QApplication
 )
 from PySide6.QtCore import Qt, Signal
 from src.core.crypto import CryptoManager
@@ -16,12 +16,19 @@ class LoginWindow(QDialog):
         super().__init__()
         self.crypto_manager = crypto_manager
         self.storage = storage
+        self._can_close = False  # Флаг разрешения закрытия
 
         self.setWindowTitle("Вход в P2P Chat")
         self.setMinimumWidth(400)
         self.setModal(True)
 
         self._create_ui()
+
+    def closeEvent(self, event):
+        if not self._can_close:
+            QApplication.quit()  # Завершить всё приложение
+        else:
+            event.accept()
 
     def _create_ui(self):
         """Создание пользовательского интерфейса"""
@@ -126,6 +133,7 @@ class LoginWindow(QDialog):
                 keys_info
             )
 
+            self._can_close = True
             self.login_successful.emit()
             self.accept()
 
@@ -165,6 +173,7 @@ class LoginWindow(QDialog):
             self.storage.save_keys(
                 public_key, verify_key, private_key, signing_key)
 
+            self._can_close = True
             self.login_successful.emit()
             self.accept()
 

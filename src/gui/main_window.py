@@ -1,10 +1,9 @@
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QLineEdit, QListWidget,
-    QMessageBox, QSplitter, QDialog, QInputDialog
+    QMessageBox, QSplitter, QDialog
 )
-from PySide6.QtCore import Qt, Signal, Slot
-from PySide6.QtGui import QIcon, QAction
+from PySide6.QtCore import Qt
 import asyncio
 from typing import Optional
 from src.core.crypto import CryptoManager
@@ -13,7 +12,9 @@ from src.core.storage import Storage
 from src.gui.chat import ChatWindow
 from src.gui.login import LoginWindow
 from src.utils.config import WINDOW_MIN_WIDTH, WINDOW_MIN_HEIGHT
-from src.utils.themes import apply_theme, get_theme_colors
+from src.utils.themes import apply_theme
+from PySide6.QtGui import QAction
+from PySide6.QtCore import Slot
 
 
 class AddContactDialog(QDialog):
@@ -52,7 +53,7 @@ class MainWindow(QMainWindow):
 
         # Инициализация компонентов
         self.crypto = CryptoManager()
-        self.storage = Storage(self.crypto)
+        self.storage = Storage()
         self.connection = P2PConnection(self.crypto)
         self.current_connection: Optional[P2PConnection] = None
 
@@ -149,8 +150,8 @@ class MainWindow(QMainWindow):
     def load_contacts(self):
         """Загрузка списка контактов"""
         self.contacts_list.clear()
-        contacts = self.storage.get_all_chats()
-        self.contacts_list.addItems(contacts)
+        contacts = self.storage.get_contacts()
+        self.contacts_list.addItems([c["public_key"] for c in contacts])
 
     def show_add_contact_dialog(self):
         """Показать диалог добавления контакта"""
@@ -159,7 +160,6 @@ class MainWindow(QMainWindow):
             key = dialog.get_key()
             if key:
                 try:
-                    # TODO: Добавить проверку ключа
                     self.storage.add_contact(key)
                     self.load_contacts()
                     QMessageBox.information(

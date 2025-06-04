@@ -1,10 +1,8 @@
 from nacl.public import PrivateKey, PublicKey, Box
-from nacl.secret import SecretBox
 from nacl.utils import random
 from nacl.signing import SigningKey, VerifyKey
 import base64
-import json
-from typing import Tuple, Dict, Optional
+from typing import Optional
 from ..utils.config import KEY_SIZE, NONCE_SIZE
 
 
@@ -29,7 +27,7 @@ class CryptoManager:
         self._signing_key = SigningKey(verify_key)
         self._verify_key = self._signing_key.verify_key
 
-    def encrypt_message(self, message: str, recipient_public_key: bytes) -> Dict[str, str]:
+    def encrypt_message(self, message: str, recipient_public_key: bytes) -> dict[str, str]:
         """Шифрование сообщения для получателя"""
         if not self._private_key:
             raise ValueError("Ключи не инициализированы")
@@ -52,7 +50,7 @@ class CryptoManager:
             "signature": base64.b64encode(signature).decode()
         }
 
-    def decrypt_message(self, encrypted_data: Dict[str, str], sender_public_key: bytes) -> str:
+    def decrypt_message(self, encrypted_data: dict[str, str], sender_public_key: bytes) -> str:
         """Расшифровка сообщения от отправителя"""
         if not self._private_key:
             raise ValueError("Ключи не инициализированы")
