@@ -2,12 +2,13 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QTextEdit, QLabel, QLineEdit, QMessageBox
 )
-from PySide6.QtCore import Qt, Signal, Slot
+from PySide6.QtCore import Qt, Signal, Slot, QTimer
 from src.core.crypto import CryptoManager
 from src.core.network import P2PConnection
 from src.core.storage import Storage
-from src.utils.config import CHAT_HISTORY_LIMIT
+from src.utils.config import CHAT_HISTORY_LIMIT, DEFAULT_MESSAGE_EXPIRY
 import asyncio
+from datetime import datetime
 
 
 class ChatWindow(QWidget):
@@ -22,8 +23,27 @@ class ChatWindow(QWidget):
         self.storage = storage
         self.connection = connection
 
+        # Создаем локальный цикл событий для этого окна
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
+
+        # Таймер для обработки асинхронных задач
+        self.async_timer = QTimer()
+        self.async_timer.timeout.connect(self._process_async_tasks)
+        self.async_timer.start(50)  # Проверяем каждые 50 мс
+
         self._create_ui()
         self._load_history()
+
+    def _process_async_tasks(self):
+        """Обработка асинхронных задач"""
+        try:
+            # Обрабатываем все ожидающие задачи
+            pending = asyncio.all_tasks(self.loop)
+            if pending:
+                self.loop.run_until_complete(asyncio.gather(*pending))
+        except Exception as e:
+            print(f"Ошибка в обработке асинхронных задач: {e}")
 
     def _create_ui(self):
         """Создание пользовательского интерфейса"""
@@ -80,11 +100,29 @@ class ChatWindow(QWidget):
             return
 
         try:
-            asyncio.create_task(self.connection.send_message(text))
-            self._add_message_to_history("me", text)
-            self.storage.add_message(
-                self.peer_id, {"sender": "me", "text": text})
-            self.message_input.clear()
+            # Создаем задачу для отправки сообщения
+            async def send():
+                try:
+                    await self.connection.send_message(text)
+                    # Добавляем сообщение в историю только после успешной отправки
+                    message = {
+                        "text": text,
+                        "is_self": True,
+                        "timestamp": datetime.now().isoformat()
+                    }
+                    self.storage.add_message(
+                        self.peer_id, message, DEFAULT_MESSAGE_EXPIRY)
+                    self._add_message_to_history("me", text)
+                    # Очищаем поле ввода
+                    self.message_input.clear()
+                except Exception as e:
+                    print(f"Ошибка при отправке сообщения: {e}")
+                    QMessageBox.critical(self, "Ошибка",
+                                         f"Не удалось отправить сообщение: {str(e)}")
+
+            # Запускаем задачу в локальном цикле событий
+            self.loop.create_task(send())
+
         except Exception as e:
             QMessageBox.critical(self, "Ошибка",
                                  f"Не удалось отправить сообщение: {str(e)}")
