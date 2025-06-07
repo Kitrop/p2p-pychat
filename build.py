@@ -28,6 +28,59 @@ def build_app():
         '--windowed',  # Без консольного окна
         '--clean',  # Очистить кэш
         '--noconfirm',  # Не спрашивать подтверждения
+        '--hidden-import=_cffi_backend',  # Добавляем скрытый импорт
+        '--hidden-import=nacl.bindings.crypto_aead',  # Добавляем скрытый импорт
+        '--hidden-import=nacl.bindings.crypto_box',  # Добавляем скрытый импорт
+        '--hidden-import=nacl.bindings.crypto_secretbox',  # Добавляем скрытый импорт
+        '--hidden-import=nacl.bindings.crypto_sign',  # Добавляем скрытый импорт
+        '--hidden-import=nacl.bindings.crypto_stream',  # Добавляем скрытый импорт
+        '--hidden-import=nacl.bindings.crypto_generichash',  # Добавляем скрытый импорт
+        '--hidden-import=nacl.bindings.crypto_hash',  # Добавляем скрытый импорт
+        '--hidden-import=nacl.bindings.crypto_shorthash',  # Добавляем скрытый импорт
+        '--hidden-import=nacl.bindings.crypto_pwhash',  # Добавляем скрытый импорт
+        '--hidden-import=nacl.bindings.crypto_scalarmult',  # Добавляем скрытый импорт
+        '--hidden-import=nacl.bindings.crypto_core',  # Добавляем скрытый импорт
+        '--hidden-import=nacl.bindings.crypto_secretstream',  # Добавляем скрытый импорт
+        '--hidden-import=nacl.bindings.crypto_kx',  # Добавляем скрытый импорт
+        '--hidden-import=nacl.bindings.crypto_auth',  # Добавляем скрытый импорт
+        '--hidden-import=nacl.bindings.crypto_onetimeauth',  # Добавляем скрытый импорт
+        '--collect-all=nacl',  # Собираем все модули PyNaCl
+        '--collect-all=cffi',  # Собираем все модули CFFI
+        '--collect-all=aiortc',  # Собираем все модули aiortc
+        '--hidden-import=aiortc',  # Добавляем скрытый импорт aiortc
+        '--hidden-import=aiortc.mediastreams',  # Добавляем скрытый импорт медиапотоков
+        # Добавляем скрытый импорт RTCPeerConnection
+        '--hidden-import=aiortc.rtcpeerconnection',
+        '--hidden-import=aiortc.rtcrtpsender',  # Добавляем скрытый импорт RTCRtpSender
+        # Добавляем скрытый импорт RTCRtpReceiver
+        '--hidden-import=aiortc.rtcrtpreceiver',
+        # Добавляем скрытый импорт RTCRtpTransceiver
+        '--hidden-import=aiortc.rtcrtptransceiver',
+        # Добавляем скрытый импорт RTCRtpParameters
+        '--hidden-import=aiortc.rtcrtpparameters',
+        # Добавляем скрытый импорт RTCRtpContributingSource
+        '--hidden-import=aiortc.rtcrtpcontributingsource',
+        # Добавляем скрытый импорт RTCRtpEncodingParameters
+        '--hidden-import=aiortc.rtcrtpencodingparameters',
+        # Добавляем скрытый импорт RTCRtpCodecParameters
+        '--hidden-import=aiortc.rtcrtpcodecparameters',
+        '--hidden-import=aiortc.rtcrtpheader',  # Добавляем скрытый импорт RTCRtpHeader
+        '--hidden-import=aiortc.rtcrtppacket',  # Добавляем скрытый импорт RTCRtpPacket
+        '--hidden-import=aiortc.rtcrtpsender',  # Добавляем скрытый импорт RTCRtpSender
+        # Добавляем скрытый импорт RTCRtpReceiver
+        '--hidden-import=aiortc.rtcrtpreceiver',
+        # Добавляем скрытый импорт RTCRtpTransceiver
+        '--hidden-import=aiortc.rtcrtptransceiver',
+        # Добавляем скрытый импорт RTCRtpParameters
+        '--hidden-import=aiortc.rtcrtpparameters',
+        # Добавляем скрытый импорт RTCRtpContributingSource
+        '--hidden-import=aiortc.rtcrtpcontributingsource',
+        # Добавляем скрытый импорт RTCRtpEncodingParameters
+        '--hidden-import=aiortc.rtcrtpencodingparameters',
+        # Добавляем скрытый импорт RTCRtpCodecParameters
+        '--hidden-import=aiortc.rtcrtpcodecparameters',
+        '--hidden-import=aiortc.rtcrtpheader',  # Добавляем скрытый импорт RTCRtpHeader
+        '--hidden-import=aiortc.rtcrtppacket',  # Добавляем скрытый импорт RTCRtpPacket
     ]
 
     # Добавляем иконку, если она существует

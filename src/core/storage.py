@@ -16,6 +16,7 @@ class Storage:
         self.contacts_file = Path("data") / "contacts.json"
         self._ensure_settings_file()
         self._ensure_contacts_file()
+        self.crypto = None  # Будет установлен из MainWindow
 
     def _ensure_directories(self) -> None:
         """Создание необходимых директорий"""

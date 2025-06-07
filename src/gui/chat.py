@@ -7,6 +7,7 @@ from src.core.crypto import CryptoManager
 from src.core.network import P2PConnection
 from src.core.storage import Storage
 from src.utils.config import CHAT_HISTORY_LIMIT
+import asyncio
 
 
 class ChatWindow(QWidget):
@@ -23,7 +24,6 @@ class ChatWindow(QWidget):
 
         self._create_ui()
         self._load_history()
-        self._setup_connection()
 
     def _create_ui(self):
         """Создание пользовательского интерфейса"""
@@ -59,12 +59,6 @@ class ChatWindow(QWidget):
             self._add_message_to_history(
                 msg.get("sender", self.peer_id), msg.get("text", ""))
 
-    def _setup_connection(self):
-        """Настройка соединения"""
-        self.connection.message_received.connect(self.on_message_received)
-        self.connection.connection_closed.connect(self.on_connection_closed)
-
-    @Slot(str, str)
     def on_message_received(self, peer_id: str, message: str):
         """Обработка полученного сообщения"""
         if peer_id == self.peer_id:
@@ -72,7 +66,6 @@ class ChatWindow(QWidget):
             self.storage.add_message(
                 self.peer_id, {"sender": peer_id, "text": message})
 
-    @Slot(str)
     def on_connection_closed(self, peer_id: str):
         """Обработка закрытия соединения"""
         if peer_id == self.peer_id:
@@ -87,7 +80,7 @@ class ChatWindow(QWidget):
             return
 
         try:
-            self.connection.send_message(self.peer_id, text)
+            asyncio.create_task(self.connection.send_message(text))
             self._add_message_to_history("me", text)
             self.storage.add_message(
                 self.peer_id, {"sender": "me", "text": text})
@@ -113,6 +106,4 @@ class ChatWindow(QWidget):
 
     def closeEvent(self, event):
         """Обработка закрытия окна"""
-        self.connection.message_received.disconnect(self.on_message_received)
-        self.connection.connection_closed.disconnect(self.on_connection_closed)
         event.accept()

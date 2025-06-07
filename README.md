@@ -2,7 +2,7 @@
 
 Безопасный P2P мессенджер с end-to-end шифрованием, написанный на Python с использованием PySide6.
 
-![Version](https://img.shields.io/badge/version-0.1.2-blue.svg)
+![Version](https://img.shields.io/badge/version-0.1.5-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.11+-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-yellow.svg)
 

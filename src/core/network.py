@@ -9,11 +9,18 @@ logger = logging.getLogger(__name__)
 
 
 class P2PConnection:
-    def __init__(self, on_message: Callable[[str], None]):
+    def __init__(self, crypto_manager):
         self.pc: Optional[RTCPeerConnection] = None
         self.data_channel = None
-        self.on_message = on_message
+        self.crypto = crypto_manager
         self._connected = False
+        self.message_received = None
+        self.connection_closed = None
+
+    def set_callbacks(self, on_message, on_connection_closed):
+        """Установка функций обратного вызова"""
+        self.message_received = on_message
+        self.connection_closed = on_connection_closed
 
     async def create_connection(self) -> None:
         """Создание нового P2P соединения"""
@@ -28,14 +35,16 @@ class P2PConnection:
 
             @channel.on("message")
             def on_message(message):
-                if isinstance(message, str):
-                    self.on_message(message)
+                if isinstance(message, str) and self.message_received:
+                    self.message_received(message)
 
         @self.pc.on("connectionstatechange")
         async def on_connectionstatechange():
             if self.pc.connectionState == "failed":
                 await self.pc.close()
                 self._connected = False
+                if self.connection_closed:
+                    self.connection_closed()
 
     async def create_offer(self) -> str:
         """Создание предложения для соединения"""
@@ -47,7 +56,7 @@ class P2PConnection:
         @self.data_channel.on("message")
         def on_message(message):
             if isinstance(message, str):
-                self.on_message(message)
+                self.message_received(message)
 
         offer = await self.pc.createOffer()
         await self.pc.setLocalDescription(offer)

@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QPushButton, QLabel, QLineEdit, QListWidget,
     QMessageBox, QSplitter, QDialog
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 import asyncio
 from typing import Optional
 from src.core.crypto import CryptoManager
@@ -54,8 +54,18 @@ class MainWindow(QMainWindow):
         # Инициализация компонентов
         self.crypto = CryptoManager()
         self.storage = Storage()
+        self.storage.crypto = self.crypto  # Добавляем crypto в storage
         self.connection = P2PConnection(self.crypto)
         self.current_connection: Optional[P2PConnection] = None
+
+        # Настройка асинхронного цикла событий
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
+
+        # Таймер для обработки асинхронных задач
+        self.async_timer = QTimer()
+        self.async_timer.timeout.connect(self._process_async_tasks)
+        self.async_timer.start(50)  # Проверяем каждые 50 мс
 
         # Создание UI
         self._create_ui()
@@ -64,6 +74,16 @@ class MainWindow(QMainWindow):
         # Проверка наличия ключей
         if not self.storage.load_keys():
             self.show_login_window()
+
+    def _process_async_tasks(self):
+        """Обработка асинхронных задач"""
+        try:
+            # Обрабатываем все ожидающие задачи
+            pending = asyncio.all_tasks(self.loop)
+            if pending:
+                self.loop.run_until_complete(asyncio.gather(*pending))
+        except Exception as e:
+            print(f"Ошибка в обработке асинхронных задач: {e}")
 
     def _create_ui(self):
         """Создание пользовательского интерфейса"""
@@ -164,6 +184,7 @@ class MainWindow(QMainWindow):
                     self.load_contacts()
                     QMessageBox.information(
                         self, "Успех", "Контакт успешно добавлен")
+                    self.open_chat(key)  # Открыть чат сразу после добавления
                 except Exception as e:
                     QMessageBox.critical(
                         self, "Ошибка", f"Не удалось добавить контакт: {str(e)}")
@@ -179,9 +200,26 @@ class MainWindow(QMainWindow):
         for i in reversed(range(self.chat_widget.layout().count())):
             self.chat_widget.layout().itemAt(i).widget().setParent(None)
 
+        # Создаем новое соединение для чата
+        self.current_connection = P2PConnection(self.crypto)
+
         # Создаем новое окно чата
         chat_window = ChatWindow(peer_id, self.crypto,
-                                 self.storage, self.connection)
+                                 self.storage, self.current_connection)
+
+        # Устанавливаем обработчики событий
+        self.current_connection.set_callbacks(
+            lambda msg: chat_window.on_message_received(peer_id, msg),
+            lambda: chat_window.on_connection_closed(peer_id)
+        )
+
+        # Инициализируем соединение
+        try:
+            self.loop.create_task(self.current_connection.create_connection())
+        except Exception as e:
+            QMessageBox.critical(
+                self, "Ошибка", f"Не удалось установить соединение: {str(e)}")
+
         self.chat_widget.layout().addWidget(chat_window)
 
     def toggle_theme(self):
@@ -205,6 +243,11 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         """Обработка закрытия окна"""
-        if self.current_connection:
-            asyncio.create_task(self.current_connection.close())
+        try:
+            if self.current_connection:
+                self.loop.run_until_complete(self.current_connection.close())
+            self.async_timer.stop()
+            self.loop.close()
+        except Exception as e:
+            print(f"Ошибка при закрытии окна: {e}")
         event.accept()
